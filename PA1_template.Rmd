@@ -1,20 +1,184 @@
 # Reproducible Research: Peer Assessment 1
 
+This is the first peer reviewed assignment for the Reproducible Research Coursera course. The data was provided in a zipped format from the repo created by **rdpeng** and will be unzipped and pulled into r.
+
+Set the working directory.
+```{r}
+setwd("p://RepData_PeerAssessment1/")
+```
 
 ## Loading and preprocessing the data
 
+This project includes an instructor provided data set. Prior to using this data set it must be unzipped and placed in a new file. To unzip the file I have used the command $unzip("./activity.zip",exdir="./data")$.
 
+The unzipped file is imported into R so that data processing can begin.
+
+```{r}
+DTA<-read.csv("./data/activity.csv")
+```
+The data is processed using three steps
+
+1. Construct a new column for the data frame that identifies the complete cases.
+2. Construct a subset of the original data frame containing only complete cases.
+3. Calculate some summary statistics with the subsetted data frame.
+
+The complete cases are identified using
+```{r}
+DTA$CC<-complete.cases(DTA)
+DTA$Count<-1
+CO<-function(X){
+        n<-length(X[[1]])
+        for(i in 1:n){
+                t<-i%%288
+                X$Count[[i]]<-t
+        }
+        return(X)
+}
+DTA<-CO(DTA)
+DTA$Date<-as.Date(DTA$date)
+DTA$Weekday<-weekdays(DTA$Date,abbreviate=FALSE)
+```
+Subsetting to eliminate incomplete cases is done using
+```{r}
+DTA2<-DTA[DTA$CC==TRUE,]
+```
+An interesting question is; how many steps are taken per day? To answer this question I've constructed another data frame summarizing the number of steps taken per day.
+```{r}
+library(plyr)
+DTATotal<-ddply(DTA2,.(date),summarize,sum=sum(steps))
+```
+The sum of the steps taken each day is summarized in the following histogram.
+```{r histogram1}
+hist(DTATotal$sum,col="blue", main="Daily Total Steps",xlab="Steps")
+rug(DTATotal$sum)
+```
 
 ## What is mean total number of steps taken per day?
+The question of this heading could be interpreted in two ways.
 
+1. What are the mean and median number of steps taken per day?
+2. What are the mean and median number of steps taken across each day?
 
+The answer to the first question is presented in the following table.
+```{r summarydata, results="asis"}
+library(xtable)
+summary<-ddply(DTA2,.(date),summarize,mean=mean(steps),med=median(steps))
+xt<-xtable(summary)
+print(xt,type="html")
+```
+The answer to the second question takes less space.
+```{r}
+tmean<-mean(DTA2$steps)
+tmedian<-median(DTA2$steps)
+```
+The mean is `r tmean` and the median is `r tmedian`.
 
 ## What is the average daily activity pattern?
+Another interesting question answered by this data is during what five minute interval, on average, does this person take their most steps?
+```{r acrossminutes}
+summary2<-ddply(DTA2,.(interval),summarize,mean=mean(steps))
+```
+A picture of this data would help identify the point during a day when this person takes the most steps, on average.
+```{r Steps}
+mx<-max(summary2$mean)
+dt<-summary2[summary2$mean==mx,]
+plot(summary2$interval,summary2$mean,type="l",xlab="Time - 5 minute intervals",ylab="Mean Steps",lwd=2)
+abline(v=dt[[1]][[1]], col="red",lwd=3)
+```
 
-
+where `r dt[[1]][[1]]`; i.e., 8:35 AM, is the time of day when the most steps are taken, on average.
 
 ## Imputing missing values
+The original data has missing values. 
+```{r}
+NAsum<-sum(is.na(DTA$steps))
+```
 
+The number of missing values is `r NAsum`.
 
+```{r}
+summary2$Count<-1
+summary2<-CO(summary2)
+summary2[[3]][[288]]<-288
+g<-function(x){
+        n<-length(summary2[[1]])#This function finds a mean value for a given 5-minute time interval
+        for(i in 1:n){
+                t<-summary2[[3]][[i]]
+                if(t==x){
+                        avg<-summary2[t:t,]
+                        break
+                }
+        }
+        return(avg[[2]])
+}
+fix<-function(X){
+        n<-length(X[[1]]) #This function is replacing the NAs in a data set, specifically the DTA data set
+        for(i in 1:n){   #The function is not general, but specific to this problem
+                t<-X[[1]][[i]]
+                if(is.na(t)){
+                        c<-X[[5]][[i]]
+                        if(c==0){
+                                c<-288
+                        }
+                        X[[1]][[i]]<-g(c)
+                }
+        }
+        return(X)
+}
+DTA3<-fix(DTA) #This is a new data frame with the NAs replaced
+summary<-ddply(DTA3,.(date),summarize,sum=sum(steps))
+```
+After replacing the NAs in the original data set we can reconstruct the histogram showing the average number of steps per day.
+
+```{r histogram2}
+hist(summary$sum,col="blue", main="Daily Total Steps",xlab="Steps")
+rug(summary$sum)
+```
+
+After this transforamtion of the data the overal mean and median are recalculated as
+```{r}
+omean<-mean(DTA3$steps)
+omed<-median(DTA3$steps)
+```
+producing a mean of `r omean` and median `r omed`, compared to the original data's mean `r tmean` and median `r tmedian`. As you can see the transformation performed here did not affect the overall measures of central tendancy. However, as can be seed in the histograms the absolute frequencies are different for the original data series and the modified series.
+
+```{r weekfunction}
+ wd<-function(DAY){
+     wd<-c("Monday","Tuesday","Wednesday","Thursday","Friday")
+     t<-DAY %in% wd
+     if(t){
+         out<-"Weekday"
+     } else{
+         out<-"Weekend"
+     }
+     return(out)
+ }
+WKDAY<-function(X){
+        n<-length(X[[1]])
+        X$WD<-as.character(1)
+        for(i in 1:n){
+                t<-X[[7]][[i]] #Extract the weekday one point at a time
+                w<-wd(t) #Retrieve a weekday weekend marker
+                X[[8]][[i]]<-w
+        }
+        return(X)
+}
+```
+Augment the current data frame so that each week day is called either "Weekday" or "Weekend". This augmentation requires the functions defined above.
+```{r}
+DTA3<-WKDAY(DTA3)
+WEEKDAY<-DTA3[DTA3$WD=="Weekday",]
+WDsummary<-ddply(WEEKDAY,.(interval),summarize,mean=mean(steps))
+WEEKEND<-DTA3[DTA3$WD=="Weekend",]
+WEsummary<-ddply(WEEKEND,.(interval),summarize,mean=mean(steps))
+```
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+Another interesting view of the data is to separate the data into weekdays and weekends. comparisons are then possible showing the difference in activity along this dimension. The graphs given below are two time series plots showing the difference in acticity levels on weekdays and weekends.
+```{r}
+par(mfrow=c(1,2))
+plot(WDsummary$interval,WDsummary$mean,main="Weekdays",xlab="5 - Minute Intervals", ylab="Step Mean",type="l",lty=1,lwd=2)
+plot(WEsummary$interval,WEsummary$mean, main="Weekends",xlab="5 - Minute Intervals", ylab="Step Mean",type = "l", lty=1,lwd=2)
+```
+The plots demonstrate that there is a difference between the activity of this individual based on weekday or weekend. On any given weekday the average number of steps only goes above 100 twice any given interval; however, on a weekend this threshhold is exceded at least four times during the day.
