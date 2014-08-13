@@ -135,12 +135,12 @@ hist(summary$sum,col="blue", main="Daily Total Steps",xlab="Steps")
 rug(summary$sum)
 ```
 
-After this transforamtion of the data the overal mean and median are recalculated as
+After this transformation of the data the overall mean and median are recalculated as
 ```{r}
 omean<-mean(DTA3$steps)
 omed<-median(DTA3$steps)
 ```
-producing a mean of `r omean` and median `r omed`, compared to the original data's mean `r tmean` and median `r tmedian`. As you can see the transformation performed here did not affect the overall measures of central tendancy. However, as can be seed in the histograms the absolute frequencies are different for the original data series and the modified series.
+producing a mean of `r omean` and median `r omed`, compared to the original data's mean `r tmean` and median `r tmedian`. As you can see the transformation performed here did not affect the overall measures of central tendency. However, as can be seed in the histograms the absolute frequencies are different for the original data series and the modified series.
 
 ```{r weekfunction}
  wd<-function(DAY){
@@ -175,10 +175,10 @@ WEsummary<-ddply(WEEKEND,.(interval),summarize,mean=mean(steps))
 
 ## Are there differences in activity patterns between weekdays and weekends?
 
-Another interesting view of the data is to separate the data into weekdays and weekends. comparisons are then possible showing the difference in activity along this dimension. The graphs given below are two time series plots showing the difference in acticity levels on weekdays and weekends.
+Another interesting view of the data is to separate the data into weekdays and weekends. comparisons are then possible showing the difference in activity along this dimension. The graphs given below are two time series plots showing the difference in activity levels on weekdays and weekends.
 ```{r}
 par(mfrow=c(1,2))
 plot(WDsummary$interval,WDsummary$mean,main="Weekdays",xlab="5 - Minute Intervals", ylab="Step Mean",type="l",lty=1,lwd=2)
 plot(WEsummary$interval,WEsummary$mean, main="Weekends",xlab="5 - Minute Intervals", ylab="Step Mean",type = "l", lty=1,lwd=2)
 ```
-The plots demonstrate that there is a difference between the activity of this individual based on weekday or weekend. On any given weekday the average number of steps only goes above 100 twice any given interval; however, on a weekend this threshhold is exceded at least four times during the day.
+The plots demonstrate that there is a difference between the activity of this individual based on weekday or weekend. On any given weekday the average number of steps only goes above 100 twice any given interval; however, on a weekend this threshold is exceeded at least four times during the day.
