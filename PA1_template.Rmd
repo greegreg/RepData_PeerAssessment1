@@ -1,3 +1,6 @@
+---
+output: html_document
+---
 # Reproducible Research: Peer Assessment 1
 
 This is the first peer reviewed assignment for the Reproducible Research Coursera course. The data was provided in a zipped format from the repo created by **rdpeng** and will be unzipped and pulled into r.
